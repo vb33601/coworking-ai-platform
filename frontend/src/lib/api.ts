@@ -16,12 +16,12 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-export async function searchWorkspaces(rawInput: string) {
+export async function searchWorkspaces(rawInput: string, useAI: boolean = false) {
   const { data } = await api.post('/api/v1/orchestrator/search', {
     tenant_id: 'demo',
     user_id: 'demo',
     raw_input: rawInput,
-    context: { use_ai: true }
+    context: { use_ai: useAI }
   })
   return data
 }
