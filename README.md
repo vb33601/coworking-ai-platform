@@ -1,6 +1,6 @@
 # Coworking AI Platform
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://dashboard.render.com/blueprint?owner=vb33601&repo=coworking-ai-platform&branch=main)
+**Deploy on Koyeb** (free always-on) — see instructions below.
 
 ## Enterprise-Grade AI Agentic Harness for Co-Working Space Discovery
 
@@ -170,6 +170,21 @@ PostgreSQL with pgvector extension supports:
 - BHIVE
 - Simpliwork
 - TableSpace
+
+## Deploy on Koyeb (Free Always-On)
+
+1. Go to [https://app.koyeb.com/](https://app.koyeb.com/) and sign up/log in with GitHub
+2. Click **Create Service**
+3. Under **GitHub**, select the repo `vb33601/coworking-ai-platform`
+4. Select branch: `main`
+5. Builder: **Dockerfile**
+6. Port: `8000`
+7. Click **Advanced** and add this environment variable:
+   - `FIREWORKS_API_KEY` → your Fireworks API key
+8. Instance type: **Free** (512 MB RAM — sufficient for this app)
+9. Click **Deploy**
+
+Koyeb will build the Docker image and deploy. You'll get a permanent `*.koyeb.app` URL that stays awake.
 
 ## License
 
