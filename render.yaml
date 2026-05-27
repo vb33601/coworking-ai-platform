@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: coworking-ai-platform
+    runtime: python
+    plan: free
+    branch: main
+    buildCommand: cd render_bundle && pip install -r requirements.txt
+    startCommand: cd render_bundle && uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
+    envVars:
+      - key: FIREWORKS_API_KEY
+        sync: false
+      - key: FIREWORKS_BASE_URL
+        value: https://api.fireworks.ai/inference/v1
+      - key: FIREWORKS_MODEL
+        value: accounts/fireworks/routers/kimi-k2p6-turbo
+      - key: DATABASE_URL
+        generateValue: false
+      - key: REDIS_URL
+        generateValue: false
+      - key: LOG_LEVEL
+        value: INFO
+      - key: WHATSAPP_ENABLED
+        value: "false"
+      - key: PYTHON_VERSION
+        value: "3.11"
+    disk:
+      name: tmp
+      mountPath: /tmp
+      sizeGB: 1

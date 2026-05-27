@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coworking-config
+  namespace: coworking-ai
+data:
+  ORCHESTRATOR_URL: "http://orchestrator:8000"
+  SEARCH_URL: "http://search:8001"
+  PRICING_URL: "http://pricing:8002"
+  LOG_LEVEL: "INFO"
+  RATE_LIMIT_PER_MINUTE: "60"

@@ -1,0 +1,155 @@
+# Global settings
+global:
+  environment: production
+  imageRegistry: ghcr.io/coworking-ai
+  imageTag: latest
+
+# Orchestrator Service
+orchestrator:
+  enabled: true
+  replicas: 3
+  image:
+    repository: orchestrator
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  env:
+    LOG_LEVEL: INFO
+    MAX_AGENT_ITERATIONS: 10
+    AGENT_TIMEOUT_SECONDS: 120
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# API Gateway
+gateway:
+  enabled: true
+  replicas: 2
+  image:
+    repository: gateway
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 8080
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: api.coworking-ai.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: coworking-ai-tls
+        hosts:
+          - api.coworking-ai.example.com
+
+# Search Service
+search:
+  enabled: true
+  replicas: 2
+  image:
+    repository: search
+    tag: latest
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Pricing Service
+pricing:
+  enabled: true
+  replicas: 2
+  image:
+    repository: pricing
+    tag: latest
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Frontend
+frontend:
+  enabled: true
+  replicas: 2
+  image:
+    repository: frontend
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 3000
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: coworking-ai.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: coworking-ai-frontend-tls
+        hosts:
+          - coworking-ai.example.com
+
+# PostgreSQL (if not external)
+postgresql:
+  enabled: false
+  auth:
+    username: postgres
+    password: changeme
+    database: coworking_ai
+  primary:
+    persistence:
+      enabled: true
+      size: 50Gi
+
+# Redis (if not external)
+redis:
+  enabled: false
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# Secrets
+secrets:
+  openaiApiKey: ""
+  anthropicApiKey: ""
+  jwtSecret: "change-me-in-production"

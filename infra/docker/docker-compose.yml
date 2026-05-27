@@ -1,0 +1,161 @@
+version: "3.9"
+
+services:
+  # Core Infrastructure
+  postgres:
+    image: ankane/pgvector:v0.5.1
+    container_name: coworking-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: coworking_ai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../shared/models/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coworking-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: coworking-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - coworking-network
+
+  # Microservices
+  orchestrator:
+    build:
+      context: ../../services/orchestrator
+      dockerfile: ../../infra/docker/Dockerfile.orchestrator
+    container_name: coworking-orchestrator
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/coworking_ai
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - SEARCH_URL=http://search:8001
+      - PRICING_URL=http://pricing:8002
+      - JWT_SECRET=${JWT_SECRET:-default-jwt-secret-change-me}
+      - LOG_LEVEL=INFO
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - coworking-network
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ../../services/gateway
+      dockerfile: ../../infra/docker/Dockerfile.gateway
+    container_name: coworking-gateway
+    environment:
+      - ORCHESTRATOR_URL=http://orchestrator:8000
+      - SEARCH_URL=http://search:8001
+      - PRICING_URL=http://pricing:8002
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - orchestrator
+      - search
+      - pricing
+    networks:
+      - coworking-network
+    restart: unless-stopped
+
+  search:
+    build:
+      context: ../../services/search
+      dockerfile: ../../infra/docker/Dockerfile.search
+    container_name: coworking-search
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/coworking_ai
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - coworking-network
+    restart: unless-stopped
+
+  pricing:
+    build:
+      context: ../../services/pricing
+      dockerfile: ../../infra/docker/Dockerfile.pricing
+    container_name: coworking-pricing
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/coworking_ai
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - coworking-network
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: ../../infra/docker/Dockerfile.frontend
+    container_name: coworking-frontend
+    environment:
+      - API_GATEWAY_URL=http://gateway:8080/api
+      - NEXT_PUBLIC_API_URL=http://gateway:8080/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway
+    networks:
+      - coworking-network
+    restart: unless-stopped
+
+  # Observability
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: coworking-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - coworking-network
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: coworking-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - coworking-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  grafana_data:
+
+networks:
+  coworking-network:
+    driver: bridge

@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.env
+.env.local
+
+# Build outputs
+.next/
+frontend/dist/
+frontend/out/
+
+# Local dev
+*.log
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Render bundle is included for deployment
+# Do NOT ignore render_bundle
